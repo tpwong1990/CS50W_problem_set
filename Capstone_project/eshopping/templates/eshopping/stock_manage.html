@@ -1,0 +1,88 @@
+{% extends "eshopping/layout.html" %}
+{% load static %}
+
+{% block script %}
+<script>
+    function EditStock(item){
+        id = item.parentElement.parentElement.id;
+        //console.log(id);
+
+        // Get current stock no
+        fetch(`/stock_check/${id}`)
+            .then(response => response.json())
+            .then(result=> {
+                //console.log(result);
+                const stock = document.getElementById(id).getElementsByClassName("no_of_stock");
+                //console.log(stock);
+                stock[0].innerHTML = `<input id="new_stock_${id}" type=number value=${result} style="width:100px">`;
+                const button = document.getElementById(`edit_${id}`);
+                button.innerHTML = `<button class="btn btn-primary" onclick="SaveStock(this)">Save</button>`;
+            });
+
+    };
+
+    function SaveStock(item){
+        id = item.parentElement.parentElement.id;
+        //console.log(id);
+        const stock = document.getElementById(`new_stock_${id}`).value;
+        //console.log(stock);
+
+        //Update the stock
+        fetch(`/stock_check/${id}`, {
+                method: 'POST',
+                body: JSON.stringify({
+                    stock: stock
+                })
+            }).then(response => response.json())
+            .then(result => {
+                // Print result
+                console.log(result);
+            });
+
+        //Update the content
+        const stock_tag = document.getElementById(id).getElementsByClassName("no_of_stock");
+        stock_tag[0].innerHTML = `${stock}`;
+        const button = document.getElementById(`edit_${id}`);
+        button.innerHTML = `<button class="btn btn-primary" onclick="EditStock(this)">Edit</button>`;
+    }
+</script>
+{% endblock %}
+
+{% block body %}
+    <div style="text-align: center; padding: 10px;">
+        <form action="{% url 'order_manage' %}" method="get">
+            <input hidden name="status_id" value = "0">
+            <button class="btn btn-primary" type="submit" >Order Management</button>
+        </form>
+    </div>
+    <span style="text-align: center;"><h2>Stock Management</h2></span>
+    <br>
+    <div class="stock_table" style="text-align: center;">
+        <table style="width: 1200px;">
+            <thead>
+                <td>Product name</td>
+                <td>Product code</td>
+                <td>No. of stock</td>
+                <td>Quantity from outstanding orders</td>
+                <td></td>
+            </thead>
+            <tbody>
+                {% for item in items %}
+                    <tr id="{{item.id}}">
+                        <td>{{item.name}}</td>
+                        <td>{{item.code}}</td>
+                        <td class="no_of_stock">{{item.stock}}</td>
+                        <td>
+                            {% for list in outstanding_list %}
+                                {% if item.id == list.item_id %}
+                                    {{ list.quantity }}
+                                {% endif %}
+                            {% endfor%}
+                        </td>
+                        <td id="edit_{{item.id}}"><button class="btn btn-primary" onclick="EditStock(this)">Edit</button></td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+{% endblock %}

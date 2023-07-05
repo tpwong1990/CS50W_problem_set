@@ -1,0 +1,169 @@
+{% extends "eshopping/layout.html" %}
+{% load static %}
+{% load mathfilters %}
+
+{% block script %}
+<script src="{% static 'eshopping/quantity_add_sub.js' %}"></script>
+<script>
+    function ShoppingCartEdit(item){
+        id = item.parentElement.parentElement.id;
+        //console.log(id);
+
+        // Get current Quantity No
+        fetch(`/edit_shopping_cart_item_no/${id}`)
+        .then(response => response.json())
+        .then(result=> {
+            //console.log(result);
+            const tmp = document.getElementById(id).getElementsByClassName("quantity");
+            tmp[0].innerHTML = `<input type="button" class="q-" value="-" onclick="quantity_sub('quantity_no_${id}')"><input type='number' class="quantity_no_${id}" value = ${result} style="width:50px; text-align: center;"><input type="button" class="q+" value="+"onclick="quantity_add('quantity_no_${id}')">`
+            const button = document.getElementById(`edit_${id}`);
+            //console.log(button);
+            button.innerHTML = `<button class="btn btn-primary" onclick="SaveEdit(this)">Save</button> &nbsp <button class="btn btn-primary" onclick="RemoveFromCart(this)">Remove</button>`
+        });
+    };
+    function SaveEdit(item){
+        const id = item.parentElement.parentElement.id;
+        //console.log(id);
+        let quantity = document.getElementsByClassName(`quantity_no_${id}`);
+        quantity = quantity[0].value;
+        //console.log(quantity);
+
+        // Update quantity No
+        fetch(`/edit_shopping_cart_item_no/${id}`, {
+            method: 'POST',
+            body: JSON.stringify({
+                quantity: quantity
+              })
+            }).then(response => response.json())
+            .then(result => {
+              // Print result
+              console.log(result);
+           });
+
+        // Update the cart content
+        const tmp = document.getElementById(id).getElementsByClassName("quantity");
+        tmp[0].innerHTML = quantity;
+        const button = document.getElementById(`edit_${id}`);
+        button.innerHTML = '<button class="btn btn-primary" onclick="ShoppingCartEdit(this)">Edit</button>';
+        const total = document.getElementById(`sub_total_${id}`);
+        const price = total.dataset.price
+        const total_price = parseInt(quantity) * parseFloat(price)
+
+        total.innerHTML = `$ ${total_price.toFixed(2)}`;
+        CalTotal();
+    };
+
+    function RemoveFromCart(item){
+        const id = item.parentElement.parentElement.id;
+        console.log(id);
+
+        // Remove the item from cart
+        fetch(`/edit_shopping_cart_item_no/${id}`, {
+        method: 'POST',
+        body: JSON.stringify({
+            quantity: "0"
+            })
+        }).then(response => response.json())
+        .then(result => {
+            // Print result
+            console.log(result);
+        });
+
+        // Reload the page
+        location.reload()
+    };
+
+    function CalTotal() {
+        let no_item = document.getElementsByClassName("cart_table");
+        no_item = no_item[0].dataset.no_item;
+        //console.log(no_item);
+        const table_body = document.getElementsByTagName("tbody");
+        const table_row = table_body[0].getElementsByTagName("tr");
+        let sub_total = 0;
+        for (var i = 0; i < no_item; i++){
+            const id = table_row[i].id;
+            let quantity = table_row[i].getElementsByClassName("quantity");
+            quantity = parseInt(quantity[0].innerHTML);
+            sub_total = sub_total + parseFloat(document.getElementById(`sub_total_${id}`).dataset.price) * quantity;
+        }
+        //console.log(sub_total);
+        const total = document.getElementById('total');
+        total.innerHTML = `<strong>$ ${sub_total.toFixed(2)}</strong>`;
+    };
+
+
+    document.addEventListener('DOMContentLoaded', function() {
+        CalTotal();
+    });
+
+    function ToConfirmPlaceOrder() {
+        let text = `Are you sure to place the order(s)?`;
+        if (confirm(text) == true) {
+            alert("The order has been placed!")
+        }
+    }
+</script>
+{% endblock %}
+
+{% block body %}
+<h3>Shopping Cart</h3>
+    {% if carts %}
+        <table class ="cart_table" data-no_item="{{carts|length}}">
+            <thead>
+                <td>Item</td>
+                <td>Price</td>
+                <td>Quantity</td>
+                <td>Sub-total</td>
+                <td></td>
+            </thead>
+            <tbody>
+                {% for cart in carts %}
+                    <tr id="{{cart.wished_item.id}}">
+                        <td>
+                            <div>
+                                {% if cart.wished_item.cover_image %}
+                                    <img src='{% static cart.wished_item.cover_image %}' style="max-width:100px; width:100%">
+                                {% else %}
+                                    <img src='https://media.istockphoto.com/id/1357365823/vector/default-image-icon-vector-missing-picture-page-for-website-design-or-mobile-app-no-photo.jpg?s=1024x1024&w=is&k=20&c=FGIHlElBCl9f52B_974wFjOxOj_yGSZIYJcbYtRZGP8=' style="max-width:100px; width:100%">
+                                {% endif %}
+                            </div>
+                            {{cart.wished_item.name}}
+                        </td>
+                        {% if cart.wished_item.updated_price > 0 %}
+                            <td>$ {{cart.wished_item.updated_price}}</td>
+                        {% else %}
+                            <td>$ {{cart.wished_item.price}}</td>
+                        {% endif %}
+                        <td class="quantity">{{cart.quantity}}</td>
+                        {% if cart.wished_item.updated_price > 0 %}
+                            <td id="sub_total_{{cart.wished_item.id}}" data-price = "{{cart.wished_item.updated_price}}">$ {{cart.wished_item.updated_price|mul:cart.quantity}}</td>
+                        {% else %}
+                            <td id="sub_total_{{cart.wished_item.id}}" data-price = "{{cart.wished_item.price}}">$ {{cart.wished_item.price|mul:cart.quantity}}</td>
+                        {% endif %}
+                        <td id="edit_{{cart.wished_item.id}}"><button class="btn btn-primary" onclick="ShoppingCartEdit(this)">Edit</button></td>
+                    </tr>
+                {% endfor %}
+                <tr>
+                    <td></td>
+                    <td></td>
+                    <td>Total: </td>
+                    <td id="total"></td>
+                </tr>
+                <tr>
+                    <td></td>
+                    <td></td>
+                    <td></td>
+                    <td>
+                        <form action="{% url 'placing_order' %}" method="post">
+                            {% csrf_token %}
+                            <button class="btn btn-primary" type="submit" onclick="ToConfirmPlaceOrder()">Place order</button>
+                        </form>
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+    {% else %}
+        There is no items inside the shopping cart.
+    {% endif %}
+    
+{% endblock %}

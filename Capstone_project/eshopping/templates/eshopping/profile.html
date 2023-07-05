@@ -1,0 +1,91 @@
+{% extends "eshopping/layout.html" %}
+{% load static %}
+
+{% block script %}
+<script>
+    function StatusColor(){
+        let order_no = document.getElementsByClassName("order_table");
+        order_no =  parseInt(order_no[0].dataset.no_order);
+        //console.log(order_no);
+        const tmp = document.getElementsByClassName("status");
+        for (var i = 0; i < order_no; i++) {
+            const id = parseInt(tmp[i].id);
+            if (id == 3 || id == 5) {
+                // waiting contact or delivery ongoing
+                tmp[i].style.color = "#FFC300";
+            };
+            if (id == 1) {
+                // delivered
+                tmp[i].style.color = "green";
+            };
+            if (id == 2) {
+                 // waiting payment
+                tmp[i].style.color = "red";
+            };
+            if (id == 4) {
+                // cancelled 
+                tmp[i].style.color = "#900C3F";
+            }
+        };
+
+        
+    };
+
+    document.addEventListener('DOMContentLoaded', function() {
+        StatusColor();
+    });
+</script>
+    
+{% endblock%}
+{% block body %}
+    <div class="user_detail">
+        <h3>Profile</h3>
+        <table>
+            <tr>
+                <td>Username:</td>
+                <td>{{current_user.username}}</td>
+            </tr>
+            <tr>
+                <td>Email:</td>
+                <td>{{current_user.email}}</td>
+            </tr>
+            <tr>
+                <td>Mobile phone no.:</td>
+                <td>{{current_user.phone_no}}</td>
+            </tr>
+        </table>
+    </div>
+    <br>
+    <div class="order_history">
+        <h3>Order history</h3>
+        {% if orders %}
+        <table class="order_table" style="text-align: center; width: 1000px;" data-no_order="{{orders|length}}">
+            <thead>
+                <td>Item</td>
+                <td>Price</td>
+                <td>Quantity</td>
+                <td>Status</td>
+            </thead>
+            <tbody>
+                {% for order in orders %}
+                <tr>
+                    <td>
+                        <div>
+                            {% if order.product.cover_image %}
+                                <img src='{% static order.product.cover_image %}' style="max-width:100px; width:100%">
+                            {% else %}
+                                <img src='https://media.istockphoto.com/id/1357365823/vector/default-image-icon-vector-missing-picture-page-for-website-design-or-mobile-app-no-photo.jpg?s=1024x1024&w=is&k=20&c=FGIHlElBCl9f52B_974wFjOxOj_yGSZIYJcbYtRZGP8=' style="max-width:100px; width:100%">
+                            {% endif %}
+                        </div>
+                        {{ order.product.name }}
+                    </td>
+                    <td>$ {{ order.product_price }}</td>
+                    <td>{{ order.quantity }}</td>
+                    <td class="status" id="{{order.status.id}}">{{ order.status.status }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% endif %}
+    </div>
+{% endblock %}

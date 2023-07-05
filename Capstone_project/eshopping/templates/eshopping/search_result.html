@@ -1,0 +1,58 @@
+{% extends "eshopping/layout.html" %}
+{% load static %}
+{% load mathfilters %}
+
+{% block script %}
+    <script src="{% static 'eshopping/item_box_content.js' %}"></script>
+    <script src="{% static 'eshopping/page_navigator(search).js' %}"></script>
+    <script src="{% static 'eshopping/page_content(search).js' %}"></script>
+    <script src="{% static 'eshopping/mouseover_effect.js' %}"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const temp = document.getElementsByClassName("passed_search_text");
+            const search_text = temp[0].dataset.search_text;
+            //console.log(search_text);
+            load_grid_items_search(1,search_text);
+        });
+    </script>
+{% endblock %}
+{% block body %}
+    
+    <div class="search" style="padding: 10px; text-align: center;">
+        <div hidden class="passed_search_text" data-search_text="{{search_text}}"></div>
+        <form action="{% url 'item_search' %}" method="get">
+            <h3>Product Search</h3>
+            <br>
+            <input type="text" name="search_text">
+            <input type="submit" value="Search">
+        </form>
+    </div>
+    <span style="text-align: center;"><h3>Search Result</h3></span>
+    {% if match == True %}
+    <div class="item_grid" style="text-align: center;">
+        <div hidden class="no_of_box" data-no_of_box="{{ box_no }}"></div>
+        {% for i in no_box_range %}
+            <div class="item_box" name="{{forloop.counter}}">
+            </div>
+        {% endfor %}
+    </div>
+    <nav aria-label="Page navigation example">
+        <ul class="pagination justify-content-center">
+            <div hidden class="total_page_no" data-total_page_no="{{total_page_no}}"></div>
+                <li class="page-item disabled" id="previous_page">
+                    <a class="page-link" href="#" aria-label="Previous" aria-disabled="true"><span aria-hidden="true">&laquo;</span></a>
+                </li>
+                {% with str="1234567" %}
+                    {% for n in str %}  
+                        <li class="page-item" id="{{n}}th" ></li>
+                    {% endfor %}
+                {% endwith %}
+                <li class="page-item" id="next_page">
+                    <a class="page-link" href="?page={{ items.next_page_number }}" aria-label="Next"><span aria-hidden="true">&raquo;</span></a>
+                </li>
+        </ul>
+    </nav>
+    {% else %}
+    <span style="text-align: center;"><h6>No result was found with the key word "{{search_text}}".</h6></span>
+    {% endif %}
+{% endblock %}

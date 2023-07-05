@@ -1,0 +1,216 @@
+{% extends "eshopping/layout.html" %}
+{% load static %}
+
+{% block script %}
+    <script>
+
+        function select_save_auto_sumbit(val){
+            sessionStorage.setItem("status_key", val);
+            document.getElementById("status_form").submit();
+        };
+
+        function load_selected(select_key){
+            let val = sessionStorage.getItem(select_key);
+            return val
+        };
+
+
+        function set_selected_option(select_key){
+            var mySelect = document.getElementById("selected_status");
+            for(var i, j = 0; i = mySelect.options[j]; j++) {
+                if(i.value == load_selected("status_key")) {
+                    mySelect.selectedIndex = j;
+                    break;
+                }
+            }
+        };
+        document.addEventListener('DOMContentLoaded', function() {
+            if ({{ load_option }} == 1) {
+                set_selected_option("selected_status");
+            };
+        });
+
+
+        function OrderEdit(item){
+            id = item.parentElement.parentElement.id;
+            //console.log(id);
+
+            // Get current order detail
+            fetch(`/order_detail/${id}`)
+            .then(response => response.json())
+            .then(result=> {
+                console.log(result);
+                var item = JSON.parse(result);
+                item.forEach(function (element) {
+                    const price = document.getElementById(id).getElementsByClassName("price");
+                    price[0].innerHTML = `<input id="new_price_${id}" type=number value=${element.fields.product_price} style="width:100px">`
+                    const quantity = document.getElementById(id).getElementsByClassName("quantity");
+                    quantity[0].innerHTML = `<input type=number id="new_quantity_${id}" value=${element.fields.quantity} style="width:50px">`
+                    const status = document.getElementById(id).getElementsByClassName("status");
+                    status[0].innerHTML = '';
+                    const select_tag = document.createElement("select");
+                    select_tag.setAttribute("id", `new_status_${id}`);
+                    for(var i=1; i <=5; i++){
+                        const option_tag = document.createElement("option");
+                        option_tag.value = i;
+                        {% for status_item in order_status %}
+                            if (i == {{ status_item.id }}) {
+                                option_tag.innerHTML='{{status_item.status}}';
+                            };
+                        {% endfor %}
+                        select_tag.appendChild(option_tag);
+                    };
+                    status[0].appendChild(select_tag);
+                    //console.log(element.fields.status);
+                    select_tag.selectedIndex = element.fields.status-1;
+                });
+
+
+                // Change edit button to save
+                const button = document.getElementById(`edit_${id}`);
+                button.innerHTML = `<button class="btn btn-primary" onclick="OrderSave(this)">Save</button> &nbsp <button class="btn btn-primary" onclick="OrderRemove(this)">Remove</button>`
+            });
+        };
+
+        function OrderSave(item) {
+            id = item.parentElement.parentElement.id;
+
+            const price = document.getElementById(`new_price_${id}`).value;
+            const quantity = document.getElementById(`new_quantity_${id}`).value;
+            const status = document.getElementById(`new_status_${id}`).value;
+            //console.log(price);
+            //console.log(quantity);
+            //console.log(status);
+            const confirm_save = ToConfirmSaveOrder();
+            if (confirm_save == true) {
+                // Update the database
+                fetch(`/order_detail/${id}`, {
+                method: 'POST',
+                body: JSON.stringify({
+                    price: price,
+                    quantity: quantity,
+                    status: status
+                })
+                }).then(response => response.json())
+                .then(result => {
+                // Print result
+                console.log(result);
+            });
+
+                // Update the content
+                const price_tag = document.getElementById(id).getElementsByClassName("price");
+                price_tag[0].innerHTML = `$ ${price}`;
+                const quantity_tag = document.getElementById(id).getElementsByClassName("quantity");
+                quantity_tag[0].innerHTML = `${quantity}`;
+                const status_tag = document.getElementById(id).getElementsByClassName("status");
+                {% for status_item in order_status %}
+                    if ({{status_item.id}} == status) {
+                        status_tag[0].innerHTML = '{{status_item.status}}';
+                    };
+                {% endfor %}
+                const button = document.getElementById(`edit_${id}`);
+                button.innerHTML = `<button class="btn btn-primary" onclick="OrderEdit(this)">Edit</button>`;
+            };
+        };
+
+        function OrderRemove(item) {
+            const id = item.parentElement.parentElement.id;
+
+            //Confirm remove
+            const confirm_remove = ToConfirmPlaceOrder();
+            if (confirm_remove == true) {
+                // Remove item from database
+                fetch(`/order_detail/${id}`, {
+                method: 'POST',
+                body: JSON.stringify({
+                    quantity: 0
+                })
+                }).then(response => response.json())
+                .then(result => {
+                // Print result
+                console.log(result);
+            });
+                // Reload the page
+                location.reload()
+            };
+        };
+
+        function ToConfirmPlaceOrder() {
+            let text = `Are you sure to remove the order?`;
+            if (confirm(text) == true) {
+                return true;
+            } else {
+                return false;
+            }
+        };
+
+        function ToConfirmSaveOrder() {
+            let text = `Are you sure to save the edited order?`;
+            if (confirm(text) == true) {
+                return true;
+            } else {
+                return false;
+            }
+        };
+    </script>
+{% endblock%}
+
+
+{% block body %}
+
+    <div style="text-align: center; padding: 10px;">
+        <button class="btn btn-primary" onclick="location.href='{% url 'stock_manage' %}'">Stock Management</button>
+    </div>
+    <span style="text-align: center;"><h2>Order Management</h2></span>
+    <div style="text-align: center;">
+        <form action="{% url 'order_manage' %}" method="get" id="status_form">
+            <select id='selected_status' name="status_id" onchange='select_save_auto_sumbit(this.value)'>
+                <option selected value = "0">All</option>
+                {% for list in order_status %}
+                    <option value="{{list.id}}">{{ list.status }}</option>
+                {% endfor %}
+            </select>
+        </form>
+    </div>
+    <div class="order_table" >
+        <table style="width: 1200px; text-align: center;">
+            <thead>
+                <td>Customer Username</td>
+                <td>Order placed time</td>
+                <td>Product</td>
+                <td>Product Code</td>
+                <td>Price</td>
+                <td>Quantity</td>
+                <td>Current Stock</td>
+                <td>Status</td>
+                <td></td>
+            </thead>
+            <tbody>
+                {% for order in orders %}
+                    <tr id="{{order.id}}">
+                        <td><a href="{% url 'customer_detail' order.buyer.id %}">{{order.buyer.username}}</a></td>
+                        <td>{{order.time}}</td>
+                        <td>
+                            <div>
+                                {% if order.product.cover_image %}
+                                    <img src='{% static order.product.cover_image %}' style="max-width:100px; width:100%">
+                                {% else %}
+                                    <img src='https://media.istockphoto.com/id/1357365823/vector/default-image-icon-vector-missing-picture-page-for-website-design-or-mobile-app-no-photo.jpg?s=1024x1024&w=is&k=20&c=FGIHlElBCl9f52B_974wFjOxOj_yGSZIYJcbYtRZGP8=' style="max-width:100px; width:100%">
+                                {% endif %}
+                            </div>
+                            {{order.product.name}}
+                        </td>
+                        <td>{{order.product.code}}</td>
+                        <td class="price">$ {{order.product_price}}</td>
+                        <td class="quantity">{{order.quantity}}</td>
+                        <td>{{order.product.stock}}</td>
+                        <td class="status">{{order.status.status}}</td>
+                        <td id="edit_{{order.id}}">
+                            <button class="btn btn-primary" onclick="OrderEdit(this)">Edit</button>
+                        </td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+{% endblock%}

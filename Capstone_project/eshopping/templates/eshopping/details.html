@@ -1,0 +1,107 @@
+{% extends "eshopping/layout.html" %}
+{% load static %}
+
+{% block script %}
+    <script src="{% static 'eshopping/quantity_add_sub.js' %}"></script>
+    <script src="{% static 'eshopping/detail_image_display.js' %}"></script>
+    <script>
+        function AddShoppingCart(){
+            //console.log('add');
+            let quantity = document.getElementsByClassName("quantity_no");
+            quantity = quantity[0].value;
+            //console.log(quantity);
+            let id = document.getElementById("item_id");
+            id = id.dataset.item_id;
+            //console.log(id);
+
+
+            // check stock
+            fetch(`/stock_check/${id}`)
+            .then(response => response.json())
+            .then(result=> {
+                if (result >= quantity) {
+                    // fetch to database
+                    fetch(`/add_shopping_cart/${id}`, {
+                        method: 'POST',
+                        body: JSON.stringify({
+                            quantity: quantity
+                        })
+                    }).then(response => response.json())
+                    .then(result => {
+                        // Print result
+                        console.log(result);
+                        alert("Item is added to the shopping cart");
+                    });
+                } else {
+                    alert("Item does not have enough stock");
+                }
+            });
+        };
+    </script>
+
+{% endblock %}
+
+{% block body %}
+    <div style="margin-top: 10px; margin-left: 10px;"><h3>{{item.name}}</h3></div>
+    <br>
+    <div class="detail_block_upper">
+        <div hidden id="item_id" data-item_id="{{item.id}}"></div>
+        <div class="detail_left">
+            <div class="large_image_block" style="width:auto;">
+                {% if item.cover_image %}
+                    <img class="large_image" src='{% static item.cover_image %}' style="max-width:500px; width:100%" id="image_0">
+                {% else %}
+                    <img class="large_image" src='https://media.istockphoto.com/id/1357365823/vector/default-image-icon-vector-missing-picture-page-for-website-design-or-mobile-app-no-photo.jpg?s=1024x1024&w=is&k=20&c=FGIHlElBCl9f52B_974wFjOxOj_yGSZIYJcbYtRZGP8=' style="max-width:500px; width:100%"  data-image_no="0">
+                {% endif %}
+            </div>
+            <div class="small_image_block" style="width:auto;">
+                {% for image in small_images %}
+                    <img class="small_image" src='{% static image.image %}' id="image_{{forloop.counter}}" style="max-width:100px; width:100%;">
+                {% endfor %}
+            </div>
+        </div>
+        <div class="detail_rigth">
+            <div class="price_tag" style="width:auto;">
+                {% if item.updated_price > 0 %}
+                <h3>Price $ <del>{{item.price}}</del> {{item.updated_price}}</h3>
+                {% else %}
+                <h3>Price $ {{item.price}}</h3>
+                {% endif %}
+            </div>
+            <div class="quantity_box" style="width:auto;">
+                Quantity:
+                <br>
+                <input type="button" class="q-" value="-" onclick="quantity_sub('quantity_no')">
+                <input type="number" class="quantity_no" min="1" value = "1" style="max-width:50px; text-align: center; width:100%">
+                <input type="button" class="q+" value="+"onclick="quantity_add('quantity_no')">
+            </div>
+
+            {% if item.stock > 0 %}
+                {% if user.is_authenticated %}
+                    <button type="button" class="btn btn-primary" onclick="AddShoppingCart()">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-cart" viewBox="0 0 16 16">
+                        <path d="M0 1.5A.5.5 0 0 1 .5 1H2a.5.5 0 0 1 .485.379L2.89 3H14.5a.5.5 0 0 1 .491.592l-1.5 8A.5.5 0 0 1 13 12H4a.5.5 0 0 1-.491-.408L2.01 3.607 1.61 2H.5a.5.5 0 0 1-.5-.5zM3.102 4l1.313 7h8.17l1.313-7H3.102zM5 12a2 2 0 1 0 0 4 2 2 0 0 0 0-4zm7 0a2 2 0 1 0 0 4 2 2 0 0 0 0-4zm-7 1a1 1 0 1 1 0 2 1 1 0 0 1 0-2zm7 0a1 1 0 1 1 0 2 1 1 0 0 1 0-2z"></path>
+                        </svg>
+                        Add to shopping cart
+                    </button>
+                {% else %}
+                    <button type="button" class="btn btn-primary" disabled>
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-cart" viewBox="0 0 16 16">
+                        <path d="M0 1.5A.5.5 0 0 1 .5 1H2a.5.5 0 0 1 .485.379L2.89 3H14.5a.5.5 0 0 1 .491.592l-1.5 8A.5.5 0 0 1 13 12H4a.5.5 0 0 1-.491-.408L2.01 3.607 1.61 2H.5a.5.5 0 0 1-.5-.5zM3.102 4l1.313 7h8.17l1.313-7H3.102zM5 12a2 2 0 1 0 0 4 2 2 0 0 0 0-4zm7 0a2 2 0 1 0 0 4 2 2 0 0 0 0-4zm-7 1a1 1 0 1 1 0 2 1 1 0 0 1 0-2zm7 0a1 1 0 1 1 0 2 1 1 0 0 1 0-2z"></path>
+                        </svg>
+                        Add to shopping cart
+                    </button>
+                {% endif %}
+            {% else %}
+                <button type="button" class="btn btn-primary" disabled>Sold out</button>
+            {% endif %}
+        </div>
+    </div>
+    <div class="product_detail" style="padding: 20px;">
+        <span style="text-align: center;"><h3>Product details</h3></span>
+        {{item.description}}
+    </div>
+
+
+
+{% endblock%}
