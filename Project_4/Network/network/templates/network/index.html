@@ -1,0 +1,156 @@
+{% extends "network/layout.html" %}
+
+{% block body %}
+    <script>
+        function edit_post(id){
+            fetch(`/edit/${id}`)
+            .then(response => response.json())
+            .then(post => {
+                const content = post['content'];
+                const writer = post['writer'];
+                // pre-fill in the textarea
+                let text = document.getElementById(id).querySelector('.content');
+                text.innerHTML = `<textarea rows="4" cols="150" style="resize: none; width: 100%;" name="content">${content}</textarea>`;
+
+                //change edit button to save button
+                let button = document.getElementById(id).querySelector('.edit_save');
+                button.innerHTML = `<button style="float:right"; onclick="save_post(${id}, ${writer})">Save</button>`;
+            });
+        };
+
+        function save_post(id, writer){
+            // Get new content
+            let new_content = document.getElementById(id).querySelector('textarea').value;
+            fetch(`/edit/${id}`, {
+                method: 'POST',
+                body: JSON.stringify({
+                    writer: writer,
+                    content: new_content
+                })
+            }).then(response => response.json())
+            .then(result => {
+              // Print result
+              console.log(result);
+              let text = document.getElementById(id).querySelector('.content');
+              text.innerHTML=`${new_content}`;
+              let button = document.getElementById(id).querySelector('.edit_save');
+              button.innerHTML = `<button style="float:right;" onclick="edit_post(${id})">Edit</button>`;
+           });
+        };
+
+        function like (id) {
+            //Get post like no
+            fetch(`/edit/${id}`)
+            .then(response => response.json())
+            .then(post => {
+                const like_no = post['like_no'];
+                //Update like no
+                const new_like_no = like_no + 1;
+                fetch(`/like/${id}`, {
+                    method: 'POST',
+                    body: JSON.stringify({
+                        like_no: new_like_no
+                    })
+                }).then(response => response.json())
+                .then(result => {
+                    // Print result
+                    console.log(result);
+                });
+
+                // Update html like no
+                let like_no_display = document.getElementById(id).querySelector('.like_no');
+                like_no_display.innerHTML=`like: ${new_like_no}`;
+
+                // Change like button to unlike button
+                let button = document.getElementById(id).querySelector('.like_unlike');
+                button.innerHTML=`<button onclick="unlike(${id})">Unlike</button>`
+            });
+        };
+
+        function unlike(id) {
+            //Get post like no
+            fetch(`/edit/${id}`)
+            .then(response => response.json())
+            .then(post => {
+                const like_no = post['like_no'];
+                //Update like no
+                const new_like_no = like_no - 1;
+                fetch(`/unlike/${id}`, {
+                    method: 'POST',
+                    body: JSON.stringify({
+                        like_no: new_like_no
+                    })
+                }).then(response => response.json())
+                .then(result => {
+                    // Print result
+                    console.log(result);
+                });
+                // Update html like no
+                let like_no_display = document.getElementById(id).querySelector('.like_no');
+                like_no_display.innerHTML=`like: ${new_like_no}`;
+
+                // Change like button to unlike button
+                let button = document.getElementById(id).querySelector('.like_unlike');
+                button.innerHTML=`<button onclick="like(${id})">Like</button>`
+            });
+        };
+
+    </script>
+    <h1>All Posts</h1>
+    {% if user.is_authenticated %}
+        <div class="post_box">
+            <h3>New Post</h3>
+            <form method="post" action="{% url 'new_post' %}">
+                {% csrf_token %}
+                <textarea rows="4" cols="150" style="resize: none; width: 100%;" name="content"></textarea>
+                <br>
+                <input hidden name="writer" value = "{{ user.id }}">
+                <button type="submit">Post</button>
+            </form>
+        </div>
+    {% endif %}
+    {% for item in post_list %}
+        <div class="post_box" id="{{item.id}}">
+            <a href = "{% url 'profile' item.writer.id %}"><strong>{{ item.writer }}</strong></a>
+            {% if user == item.writer %} 
+                <span class="edit_save"><button style="float:right;" onclick="edit_post({{item.id}})">Edit</button></span>
+            {% endif %}
+            <br>
+            <div class = "content">{{item.content}}</div>
+            {{item.time}}
+            <br>
+            <span class="like_no">like: {{item.like_no}}</span>
+            <br>
+            {% if user.is_authenticated %}
+                {% if user != item.writer %}
+                    {% if user in item.liked_user.all %}
+                        <span class="like_unlike"><button onclick="unlike({{ item.id }})">Unlike</button></span>
+                    {% else %}
+                        <span class="like_unlike"><button onclick="like({{ item.id }})">Like</button></span>
+                    {% endif %}   
+                {% endif %}       
+            {% endif %}
+        </div>
+    {% endfor %}
+    <div class = "pagination">
+        <span class="step-links">
+            <div class="previous">
+            {% if post_list.has_previous %}
+                <a href="?page=1">&laquo; first</a>
+                <a href="?page={{ post_list.previous_page_number }}">previous</a>
+            {% endif %}
+            </div>
+    
+            <div class="current">
+                Page {{ post_list.number }} of {{ post_list.paginator.num_pages }}.
+            </div>
+    
+            {% if post_list.has_next %}
+            <div class="next">
+                <a href="?page={{ post_list.next_page_number }}">next</a>
+                <a href="?page={{ post_list.paginator.num_pages }}">last &raquo;</a>
+            </div>
+            {% endif %}
+        </span>
+    </div>
+{% endblock %}

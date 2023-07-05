@@ -1,0 +1,38 @@
+{% extends "network/layout.html" %}
+
+{% block body %}
+    <h1>Post</h1>
+    {% for item in user_post %}
+        <div class="post_box">
+            <a href = "{% url 'profile' item.writer.id %}"><h4>{{ item.writer }}</h4></a>
+            {{ item.content}}
+            <br>
+            {{item.time}}
+            <br>
+            like: {{item.like_no}}
+        </div>
+    {% empty %}
+        <div class="post_box">There is no post currently.</div>
+    {% endfor %}
+    <div class = "pagination">
+        <span class="step-links">
+            <div class="previous">
+            {% if user_post.has_previous %}
+                <a href="?page=1">&laquo; first</a>
+                <a href="?page={{ user_post.previous_page_number }}">previous</a>
+            {% endif %}
+            </div>
+    
+            <div class="current">
+                Page {{ user_post.number }} of {{ user_post.paginator.num_pages }}.
+            </div>
+    
+            {% if user_post.has_next %}
+            <div class="next">
+                <a href="?page={{ user_post.next_page_number }}">next</a>
+                <a href="?page={{ user_post.paginator.num_pages }}">last &raquo;</a>
+            </div>
+            {% endif %}
+        </span>
+    </div>
+{% endblock %}
