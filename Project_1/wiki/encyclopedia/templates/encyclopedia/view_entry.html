@@ -1,0 +1,18 @@
+{% extends "encyclopedia/layout.html" %}
+
+{% block title %}
+    {{ entry }}
+{% endblock %}
+
+{% block body %}
+    {% if error == 0 %}
+        <a href="edit/{{ entry }}" class="button" style="float:right; margin: 10px;">Edit</a>
+        {{ content|safe }}
+    {% endif %}
+    {% if error == 1 %}
+        <h1>Error:</h1> 
+        <br>
+        The requested page is not found
+    {% endif %}
+
+{% endblock %}

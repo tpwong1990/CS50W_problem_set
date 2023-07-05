@@ -1,0 +1,29 @@
+{% extends "encyclopedia/layout.html" %}
+
+{% block title %}
+    Edit Page
+{% endblock %}
+
+{% block body %}
+    {% if error == 0 %}
+        <form action="{{ entry }}" method="post">
+            {% csrf_token %}
+            Title: {{ entry }}
+            <br>
+            Markdown Content:
+            <br>
+            <textarea class="text" name="entry_input" rows="3" cols="50" minlength="1" required style="resize:none; width: 80%; height: 30vh;">
+                {{ content|safe }}
+            </textarea>
+            <br>
+            <input type="submit" value="Save change">
+        </form>
+    {% endif %}
+    
+    {% if error == 1 %}
+        <h1>Error:</h1>
+        <br>
+        The input field is not valid!
+    {% endif %}
+
+{% endblock %}

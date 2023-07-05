@@ -1,0 +1,39 @@
+{% extends "auctions/layout.html" %}
+
+{% block body %}
+    <h2>Active Listings</h2>
+        {% for list in listings %}
+            <div style="border: 1px solid; margin:5px; padding:5px ;">
+                <table>
+                    <tbody>
+                        <tr>
+                            <td>Item Name:</td>
+                            <td><a href="details/{{ list.id }}">{{ list.item_name }}</a></td>
+                        </tr>
+                        <tr>
+                            <td>Description:</td>
+                            <td>{{list.description}}</td>
+                        </tr>
+                        <tr>
+                            <td>Category:</td>
+                            <td>{{list.category.name}}</td>
+                        </tr>
+                        <tr>
+                            <td>Image:</td>
+                            {% if list.image == "" %}
+                                <td><img src="https://media.istockphoto.com/id/1357365823/vector/default-image-icon-vector-missing-picture-page-for-website-design-or-mobile-app-no-photo.jpg?s=1024x1024&w=is&k=20&c=FGIHlElBCl9f52B_974wFjOxOj_yGSZIYJcbYtRZGP8=" width="400px" alt="{{list.item_name}}"></td>
+                            {% else %}   
+                                <td><img src="{{list.image}}" width="400px" alt="{{list.item_name}}"></td>
+                            {% endif %}
+                        </tr>
+                        <tr>
+                            <td>Current Price:</td>
+                            <td>${{list.current_price}}</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+            {% empty %}
+            There is no items on Active Listings!
+        {% endfor %}
+{% endblock %}
